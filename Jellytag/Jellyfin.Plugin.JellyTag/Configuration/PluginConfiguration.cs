@@ -101,6 +101,18 @@ public class ImageTypeConfig
     public BadgePanelSettings AudioPanel { get; set; } = new();
     public BadgePanelSettings LanguagePanel { get; set; } = new();
 
+    // Rating panel (community / critic rating as text): off by default so existing setups are unchanged
+    public BadgePanelSettings RatingPanel { get; set; } = CreateDefaultRatingPanel(15, 2f);
+
+    public static BadgePanelSettings CreateDefaultRatingPanel(int sizePercent, float marginPercent) => new()
+    {
+        Enabled = false, Order = 5, Position = BadgePosition.TopLeft,
+        Layout = BadgeLayout.Vertical, SizePercent = sizePercent, MarginPercent = marginPercent, GapPercent = 10f,
+        ShowMode = BadgeDisplayMode.All,
+        Style = BadgeStyle.Text,
+        EnabledBadges = new List<string> { "community", "critic" }
+    };
+
     // VOST settings (attached to Language panel)
     public bool ShowVostIndicator { get; set; } = true;
     public string? VostBgColor { get; set; }
@@ -382,6 +394,8 @@ public class PluginConfiguration : BasePluginConfiguration
             EnabledBadges = new List<string>()
         };
 
+        config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(15, 2f);
+
         config.ShowVostIndicator = true;
         config.VostBgColor = "#000000";
         config.VostTextColor = "#ffffff";
@@ -427,6 +441,8 @@ public class PluginConfiguration : BasePluginConfiguration
             Style = BadgeStyle.Image,
             EnabledBadges = new List<string>()
         };
+
+        config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(10, 2.5f);
 
         config.ShowVostIndicator = true;
         config.VostBgOpacity = 255;

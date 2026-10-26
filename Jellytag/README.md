@@ -9,6 +9,7 @@ JellyTag automatically overlays quality badges (resolution, HDR, codec, audio, l
 ## Features
 
 - **Multi-category badges**: Resolution, HDR, Video Codec, Audio, Language flags, and VOST indicator
+- **Rating badges**: Optional text badges for community rating (e.g. `7.8`) and critic rating (e.g. `85%`), toggled separately in the *Rating Badges* panel — disabled by default
 - **Universal client support**: Server-side rendering via HTTP middleware — works on all Jellyfin clients
 - **Per-image-type configuration**: Independent settings for posters and thumbnails (position, size, layout, style)
 - **Per-panel customization**: Each badge category has its own panel with position, layout, ordering, colors, and display mode (highest only or all)

@@ -110,7 +110,7 @@ public partial class ImageOverlayMiddleware
             return;
         }
 
-        var badgeKey = string.Join("_", visibleBadges.Select(b => b.BadgeKey));
+        var badgeKey = string.Join("_", visibleBadges.Select(b => b.DisplayText == null ? b.BadgeKey : $"{b.BadgeKey}{b.DisplayText}"));
         _logger.LogInformation("Applying {Count} badges to {Item}: {BadgeKey}", visibleBadges.Count, item.Name, badgeKey);
 
         var query = context.Request.QueryString.Value ?? string.Empty;
@@ -215,6 +215,7 @@ public partial class ImageOverlayMiddleware
             CodecPanel = ClonePanelWithReduction(source.CodecPanel, reduction),
             AudioPanel = ClonePanelWithReduction(source.AudioPanel, reduction),
             LanguagePanel = ClonePanelWithReduction(source.LanguagePanel, reduction),
+            RatingPanel = ClonePanelWithReduction(source.RatingPanel, reduction),
             ShowVostIndicator = source.ShowVostIndicator,
             VostBgColor = source.VostBgColor,
             VostTextColor = source.VostTextColor,

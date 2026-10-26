@@ -173,7 +173,32 @@ public class QualityDetectionService : IQualityDetectionService
             }
         }
 
+        AddRatingBadges(item, badges);
+
         return badges;
+    }
+
+    private static void AddRatingBadges(BaseItem item, List<BadgeInfo> badges)
+    {
+        if (item.CommunityRating is > 0)
+        {
+            badges.Add(new BadgeInfo
+            {
+                Category = BadgeCategory.Rating,
+                BadgeKey = "community",
+                DisplayText = item.CommunityRating.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+            });
+        }
+
+        if (item.CriticRating is > 0)
+        {
+            badges.Add(new BadgeInfo
+            {
+                Category = BadgeCategory.Rating,
+                BadgeKey = "critic",
+                DisplayText = ((int)Math.Round(item.CriticRating.Value)).ToString(System.Globalization.CultureInfo.InvariantCulture) + "%"
+            });
+        }
     }
 
     private void DetectBadgesFromVideo(Video video, List<BadgeInfo> badges)

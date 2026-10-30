@@ -13,7 +13,7 @@ namespace Jellyfin.Plugin.JellyTag.Services;
 /// <summary>
 /// Service for detecting video quality from media items.
 /// </summary>
-public class QualityDetectionService : IQualityDetectionService
+public partial class QualityDetectionService: IQualityDetectionService
 {
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<QualityDetectionService> _logger;
@@ -174,8 +174,32 @@ public class QualityDetectionService : IQualityDetectionService
         }
 
         AddRatingBadges(item, badges);
+        AddEditionBadge(item, badges);
 
         return badges;
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\{edition-([^}]+)\}", System.Text.RegularExpressions.RegexOptions.IgnoreCase)]
+    private static partial System.Text.RegularExpressions.Regex EditionRegex();
+
+    /// <summary>
+    /// Reads the edition from Plex-style naming, e.g. "Movie (2018) {edition-Directors Cut}.mkv".
+    /// </summary>
+    private static void AddEditionBadge(BaseItem item, List<BadgeInfo> badges)
+    {
+        if (item is not Video || string.IsNullOrEmpty(item.Path))
+        {
+            return;
+        }
+
+        var match = EditionRegex().Match(item.Path);
+        var edition = match.Success ? match.Groups[1].Value.Trim() : string.Empty;
+        if (edition.Length == 0)
+        {
+            return;
+        }
+
+        badges.Add(new BadgeInfo { Category = BadgeCategory.Edition, BadgeKey = "edition", DisplayText = edition });
     }
 
     private static void AddRatingBadges(BaseItem item, List<BadgeInfo> badges)

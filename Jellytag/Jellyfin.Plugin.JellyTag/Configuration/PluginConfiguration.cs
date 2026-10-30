@@ -113,6 +113,18 @@ public class ImageTypeConfig
         EnabledBadges = new List<string> { "community", "critic" }
     };
 
+    // Edition panel (parsed from "{edition-...}" in the file name): off by default
+    public BadgePanelSettings EditionPanel { get; set; } = CreateDefaultEditionPanel(30, 2f);
+
+    public static BadgePanelSettings CreateDefaultEditionPanel(int sizePercent, float marginPercent) => new()
+    {
+        Enabled = false, Order = 6, Position = BadgePosition.BottomLeft,
+        Layout = BadgeLayout.Vertical, SizePercent = sizePercent, MarginPercent = marginPercent, GapPercent = 10f,
+        ShowMode = BadgeDisplayMode.All,
+        Style = BadgeStyle.Text,
+        EnabledBadges = new List<string> { "edition" }
+    };
+
     // VOST settings (attached to Language panel)
     public bool ShowVostIndicator { get; set; } = true;
     public string? VostBgColor { get; set; }
@@ -395,6 +407,7 @@ public class PluginConfiguration : BasePluginConfiguration
         };
 
         config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(15, 2f);
+        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(30, 2f);
 
         config.ShowVostIndicator = true;
         config.VostBgColor = "#000000";
@@ -443,6 +456,7 @@ public class PluginConfiguration : BasePluginConfiguration
         };
 
         config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(10, 2.5f);
+        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(20, 2.5f);
 
         config.ShowVostIndicator = true;
         config.VostBgOpacity = 255;

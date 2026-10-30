@@ -43,7 +43,12 @@ public enum BadgeCategory
     /// <summary>
     /// Rating badge (community rating, critic rating).
     /// </summary>
-    Rating
+    Rating,
+
+    /// <summary>
+    /// Edition badge parsed from the file name (Plex naming, e.g. {edition-IMAX}).
+    /// </summary>
+    Edition
 }
 
 /// <summary>

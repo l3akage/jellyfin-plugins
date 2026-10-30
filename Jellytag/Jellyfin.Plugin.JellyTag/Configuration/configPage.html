@@ -249,6 +249,11 @@
                 title: 'Rating Badges',
                 badges: [{id:'Community',key:'community',label:'Community rating (e.g. 7.8)'},{id:'Critic',key:'critic',label:'Critic rating (e.g. 85%)'}],
                 hasShowMode: false
+            },
+            Edition: {
+                title: 'Edition Badge',
+                badges: [{id:'Edition',key:'edition',label:'Show edition from file name ({edition-IMAX})'}],
+                hasShowMode: false
             }
         };
 
@@ -363,7 +368,7 @@
         }
 
         function generatePanels(prefix) {
-            return panelHTML(prefix, 'Res') + panelHTML(prefix, 'Hdr') + panelHTML(prefix, 'Codec') + panelHTML(prefix, 'Audio') + langPanelHTML(prefix) + panelHTML(prefix, 'Rating');
+            return panelHTML(prefix, 'Res') + panelHTML(prefix, 'Hdr') + panelHTML(prefix, 'Codec') + panelHTML(prefix, 'Audio') + langPanelHTML(prefix) + panelHTML(prefix, 'Rating') + panelHTML(prefix, 'Edition');
         }
 
         // ===== Panel reordering =====
@@ -573,7 +578,7 @@
         }
 
         function setupAllToggles(prefix) {
-            ['Res', 'Hdr', 'Codec', 'Audio', 'Rating'].forEach(function(pid) {
+            ['Res', 'Hdr', 'Codec', 'Audio', 'Rating', 'Edition'].forEach(function(pid) {
                 setupEnableToggle(prefix + pid);
                 setupStyleToggle(prefix + pid);
                 setupBadgeSelToggle(prefix + pid);
@@ -658,6 +663,7 @@
             loadPanelConfig(prefix, 'Codec', itc.CodecPanel);
             loadPanelConfig(prefix, 'Audio', itc.AudioPanel);
             loadPanelConfig(prefix, 'Rating', itc.RatingPanel);
+            loadPanelConfig(prefix, 'Edition', itc.EditionPanel);
             loadLangConfig(prefix, itc.LanguagePanel, itc);
             // Sort panels by Order
             var orderMap = {
@@ -666,7 +672,8 @@
                 Codec: (itc.CodecPanel || {}).Order || 0,
                 Audio: (itc.AudioPanel || {}).Order || 0,
                 Lang: (itc.LanguagePanel || {}).Order || 0,
-                Rating: (itc.RatingPanel || {}).Order || 5
+                Rating: (itc.RatingPanel || {}).Order || 5,
+                Edition: (itc.EditionPanel || {}).Order || 6
             };
             var container = document.getElementById(prefix + 'Panels');
             if (container) sortPanelsByOrder(container, orderMap);
@@ -738,7 +745,7 @@
         function collectImageTypeConfig(prefix) {
             var k = prefix + 'Lang';
             var container = document.getElementById(prefix + 'Panels');
-            var order = container ? getPanelOrder(container) : {Res:0,Hdr:1,Codec:2,Audio:3,Lang:4,Rating:5};
+            var order = container ? getPanelOrder(container) : {Res:0,Hdr:1,Codec:2,Audio:3,Lang:4,Rating:5,Edition:6};
             return {
                 Enabled: q(prefix + 'Enabled').checked,
                 ResolutionPanel: collectPanelConfig(prefix, 'Res', order.Res || 0),
@@ -747,6 +754,7 @@
                 AudioPanel: collectPanelConfig(prefix, 'Audio', order.Audio || 0),
                 LanguagePanel: collectLangConfig(prefix),
                 RatingPanel: collectPanelConfig(prefix, 'Rating', order.Rating != null ? order.Rating : 5),
+                EditionPanel: collectPanelConfig(prefix, 'Edition', order.Edition != null ? order.Edition : 6),
                 ShowVostIndicator: q(k + 'Vost').checked,
                 VostBgColor: q(k + 'VostBgColor').value || null,
                 VostTextColor: q(k + 'VostTextColor').value || null,

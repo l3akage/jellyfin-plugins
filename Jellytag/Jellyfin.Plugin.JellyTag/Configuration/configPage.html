@@ -124,6 +124,45 @@
                         </div>
                     </details>
 
+                    <!-- Status banner rules & rating colors -->
+                    <details class="jellytag-section">
+                        <summary>Status Banner Rules &amp; Rating Colors</summary>
+                        <div class="jellytag-section-body">
+                            <div class="fieldDescription">
+                                The status banner shows the highest-weight rule whose <b>Tag</b> matches a tag of the item
+                                (the part before the first ':'). Tag parts are available as <code>{1}</code>, <code>{2}</code>;
+                                a date part as <code>{date:format}</code> or <code>{DATE:format}</code> (upper case).
+                                Enable the "Status Banner" panel for posters/thumbnails above.
+                            </div>
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="StatusRulesJson">Rules (JSON)</label>
+                                <textarea id="StatusRulesJson" rows="14" style="width:100%; font-family: monospace;"></textarea>
+                            </div>
+                            <div class="inputContainer">
+                                <label class="inputLabel inputLabelUnfocused" for="TagDateCulture">Date culture (e.g. de-DE, empty = invariant)</label>
+                                <input id="TagDateCulture" type="text" is="emby-input" />
+                            </div>
+                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                <label class="emby-checkbox-label">
+                                    <input id="ColorRatings" type="checkbox" is="emby-checkbox" />
+                                    <span>Color the community rating by score</span>
+                                </label>
+                            </div>
+                            <div class="jellytag-grid">
+                                <div class="inputContainer"><label class="inputLabel inputLabelUnfocused" for="RatingHighThreshold">High from</label>
+                                    <input id="RatingHighThreshold" type="number" min="0" max="10" step="0.1" is="emby-input" /></div>
+                                <div class="inputContainer"><label class="inputLabel inputLabelUnfocused">High color</label>
+                                    <input id="RatingHighColor" type="color" value="#7ED957" /></div>
+                                <div class="inputContainer"><label class="inputLabel inputLabelUnfocused" for="RatingMidThreshold">Medium from</label>
+                                    <input id="RatingMidThreshold" type="number" min="0" max="10" step="0.1" is="emby-input" /></div>
+                                <div class="inputContainer"><label class="inputLabel inputLabelUnfocused">Medium color</label>
+                                    <input id="RatingMidColor" type="color" value="#FFD966" /></div>
+                                <div class="inputContainer"><label class="inputLabel inputLabelUnfocused">Low color</label>
+                                    <input id="RatingLowColor" type="color" value="#FF7B72" /></div>
+                            </div>
+                        </div>
+                    </details>
+
                     <!-- Custom Badge Text -->
                     <details class="jellytag-section">
                         <summary>Custom Badge Text</summary>
@@ -250,6 +289,11 @@
                 badges: [{id:'Community',key:'community',label:'Community rating (e.g. 7.8)'},{id:'Critic',key:'critic',label:'Critic rating (e.g. 85%)'}],
                 hasShowMode: false
             },
+            Status: {
+                title: 'Status Banner (from item tags)',
+                badges: [],
+                hasShowMode: false
+            },
             Edition: {
                 title: 'Edition Badge',
                 badges: [{id:'Edition',key:'edition',label:'Show edition from file name ({edition-IMAX})'}],
@@ -317,6 +361,7 @@
             h += '<div id="' + k + 'LayoutWrap">' + sel(k + 'Layout', 'Layout', LAYOUT_OPTS) + '</div>';
             h += '<div id="' + k + 'GapWrap">' + num(k + 'Gap', 'Gap between badges (%)', 0, 50, 1) + '</div>';
             h += num(k + 'Size', 'Badge Size (%)', 0, 100, 1);
+            h += num(k + 'TextHeight', 'Text badge height (% of width, 0 = auto; ~9 for a full-width bar)', 0, 200, 1);
             h += num(k + 'Margin', 'Margin (%)', 0, 20, 0.5);
             h += sel(k + 'Style', 'Badge Style', [{v:'Image',l:'Image'},{v:'Text',l:'Text'}]);
 
@@ -368,7 +413,7 @@
         }
 
         function generatePanels(prefix) {
-            return panelHTML(prefix, 'Res') + panelHTML(prefix, 'Hdr') + panelHTML(prefix, 'Codec') + panelHTML(prefix, 'Audio') + langPanelHTML(prefix) + panelHTML(prefix, 'Rating') + panelHTML(prefix, 'Edition');
+            return panelHTML(prefix, 'Res') + panelHTML(prefix, 'Hdr') + panelHTML(prefix, 'Codec') + panelHTML(prefix, 'Audio') + langPanelHTML(prefix) + panelHTML(prefix, 'Rating') + panelHTML(prefix, 'Edition') + panelHTML(prefix, 'Status');
         }
 
         // ===== Panel reordering =====
@@ -578,7 +623,7 @@
         }
 
         function setupAllToggles(prefix) {
-            ['Res', 'Hdr', 'Codec', 'Audio', 'Rating', 'Edition'].forEach(function(pid) {
+            ['Res', 'Hdr', 'Codec', 'Audio', 'Rating', 'Edition', 'Status'].forEach(function(pid) {
                 setupEnableToggle(prefix + pid);
                 setupStyleToggle(prefix + pid);
                 setupBadgeSelToggle(prefix + pid);
@@ -603,6 +648,7 @@
             q(k + 'Layout').value = pc.Layout || 'Vertical';
             q(k + 'Gap').value = pc.GapPercent != null ? pc.GapPercent : 10;
             q(k + 'Size').value = pc.SizePercent != null ? pc.SizePercent : 15;
+            q(k + 'TextHeight').value = pc.TextHeightPercent != null ? pc.TextHeightPercent : 0;
             q(k + 'Margin').value = pc.MarginPercent != null ? pc.MarginPercent : 2.5;
             q(k + 'Style').value = pc.Style || 'Image';
 
@@ -664,6 +710,7 @@
             loadPanelConfig(prefix, 'Audio', itc.AudioPanel);
             loadPanelConfig(prefix, 'Rating', itc.RatingPanel);
             loadPanelConfig(prefix, 'Edition', itc.EditionPanel);
+            loadPanelConfig(prefix, 'Status', itc.StatusPanel);
             loadLangConfig(prefix, itc.LanguagePanel, itc);
             // Sort panels by Order
             var orderMap = {
@@ -673,7 +720,8 @@
                 Audio: (itc.AudioPanel || {}).Order || 0,
                 Lang: (itc.LanguagePanel || {}).Order || 0,
                 Rating: (itc.RatingPanel || {}).Order || 5,
-                Edition: (itc.EditionPanel || {}).Order || 6
+                Edition: (itc.EditionPanel || {}).Order || 6,
+                Status: (itc.StatusPanel || {}).Order || 7
             };
             var container = document.getElementById(prefix + 'Panels');
             if (container) sortPanelsByOrder(container, orderMap);
@@ -707,6 +755,7 @@
                 Layout: q(k + 'Layout').value,
                 GapPercent: parseFloat(q(k + 'Gap').value) || 0,
                 SizePercent: parseInt(q(k + 'Size').value, 10) || 15,
+                TextHeightPercent: parseInt(q(k + 'TextHeight').value, 10) || 0,
                 MarginPercent: parseFloat(q(k + 'Margin').value) || 2.5,
                 Style: q(k + 'Style').value,
                 Order: order,
@@ -745,7 +794,7 @@
         function collectImageTypeConfig(prefix) {
             var k = prefix + 'Lang';
             var container = document.getElementById(prefix + 'Panels');
-            var order = container ? getPanelOrder(container) : {Res:0,Hdr:1,Codec:2,Audio:3,Lang:4,Rating:5,Edition:6};
+            var order = container ? getPanelOrder(container) : {Res:0,Hdr:1,Codec:2,Audio:3,Lang:4,Rating:5,Edition:6,Status:7};
             return {
                 Enabled: q(prefix + 'Enabled').checked,
                 ResolutionPanel: collectPanelConfig(prefix, 'Res', order.Res || 0),
@@ -755,6 +804,7 @@
                 LanguagePanel: collectLangConfig(prefix),
                 RatingPanel: collectPanelConfig(prefix, 'Rating', order.Rating != null ? order.Rating : 5),
                 EditionPanel: collectPanelConfig(prefix, 'Edition', order.Edition != null ? order.Edition : 6),
+                StatusPanel: collectPanelConfig(prefix, 'Status', order.Status != null ? order.Status : 7),
                 ShowVostIndicator: q(k + 'Vost').checked,
                 VostBgColor: q(k + 'VostBgColor').value || null,
                 VostTextColor: q(k + 'VostTextColor').value || null,
@@ -790,6 +840,19 @@
                 if (val) saveCbt.push({ Key: el.getAttribute('data-badge-key'), Text: val });
             });
             config.CustomBadgeTexts = saveCbt;
+
+            try {
+                config.StatusRules = JSON.parse(q('StatusRulesJson').value || '[]');
+            } catch (e) {
+                throw new Error('Status banner rules are not valid JSON: ' + e.message);
+            }
+            config.TagDateCulture = q('TagDateCulture').value.trim();
+            config.ColorRatings = q('ColorRatings').checked;
+            config.RatingHighThreshold = parseFloat(q('RatingHighThreshold').value) || 8;
+            config.RatingMidThreshold = parseFloat(q('RatingMidThreshold').value) || 6;
+            config.RatingHighColor = q('RatingHighColor').value;
+            config.RatingMidColor = q('RatingMidColor').value;
+            config.RatingLowColor = q('RatingLowColor').value;
 
             config.CacheDurationHours = parseInt(q('CacheDurationHours').value, 10);
             config.OutputFormat = q('OutputFormat').value;
@@ -922,6 +985,15 @@
                 var cbtMap = {};
                 cbtList.forEach(function(item) { cbtMap[item.Key || item.key] = item.Text || item.text; });
                 cbtInputs.forEach(function(el) { el.value = cbtMap[el.getAttribute('data-badge-key')] || ''; });
+
+                q('StatusRulesJson').value = JSON.stringify(config.StatusRules || [], null, 2);
+                q('TagDateCulture').value = config.TagDateCulture || '';
+                q('ColorRatings').checked = config.ColorRatings === true;
+                q('RatingHighThreshold').value = config.RatingHighThreshold != null ? config.RatingHighThreshold : 8;
+                q('RatingMidThreshold').value = config.RatingMidThreshold != null ? config.RatingMidThreshold : 6;
+                q('RatingHighColor').value = config.RatingHighColor || '#7ED957';
+                q('RatingMidColor').value = config.RatingMidColor || '#FFD966';
+                q('RatingLowColor').value = config.RatingLowColor || '#FF7B72';
 
                 q('CacheDurationHours').value = config.CacheDurationHours;
                 q('OutputFormat').value = config.OutputFormat;

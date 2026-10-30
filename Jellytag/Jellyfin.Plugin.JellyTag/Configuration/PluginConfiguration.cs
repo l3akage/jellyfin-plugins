@@ -82,6 +82,9 @@ public class BadgePanelSettings
     public string TextColor { get; set; } = "#FFFFFF";
     public int TextCornerRadius { get; set; } = 25;
 
+    // Text badge height as percentage of the badge width (0 = automatic: 50, edition bars 25)
+    public int TextHeightPercent { get; set; }
+
     // Per-badge-type overrides (key = badge key, value = style override)
     public List<BadgeTypeStyleOverride> BadgeTypeOverrides { get; set; } = new();
 
@@ -114,15 +117,31 @@ public class ImageTypeConfig
     };
 
     // Edition panel (parsed from "{edition-...}" in the file name): off by default
-    public BadgePanelSettings EditionPanel { get; set; } = CreateDefaultEditionPanel(30, 2f);
+    public BadgePanelSettings EditionPanel { get; set; } = CreateDefaultEditionPanel(100, 0f);
 
     public static BadgePanelSettings CreateDefaultEditionPanel(int sizePercent, float marginPercent) => new()
     {
         Enabled = false, Order = 6, Position = BadgePosition.BottomLeft,
-        Layout = BadgeLayout.Vertical, SizePercent = sizePercent, MarginPercent = marginPercent, GapPercent = 10f,
+        Layout = BadgeLayout.Vertical, SizePercent = sizePercent, MarginPercent = marginPercent, GapPercent = 0f,
         ShowMode = BadgeDisplayMode.All,
         Style = BadgeStyle.Text,
+        TextBgColor = "#000000", TextBgOpacity = 170, TextColor = "#D0D0D0",
+        TextCornerRadius = 0, TextHeightPercent = 9,
         EnabledBadges = new List<string> { "edition" }
+    };
+
+    // Status panel (banner from item tags such as NewSeasonSoon:2:2026-11-03): off by default
+    public BadgePanelSettings StatusPanel { get; set; } = CreateDefaultStatusPanel(100, 0f);
+
+    public static BadgePanelSettings CreateDefaultStatusPanel(int sizePercent, float marginPercent) => new()
+    {
+        Enabled = false, Order = 7, Position = BadgePosition.BottomLeft,
+        Layout = BadgeLayout.Vertical, SizePercent = sizePercent, MarginPercent = marginPercent, GapPercent = 0f,
+        ShowMode = BadgeDisplayMode.Highest,
+        Style = BadgeStyle.Text,
+        TextBgColor = "#000000", TextBgOpacity = 170, TextColor = "#FFFFFF",
+        TextCornerRadius = 0, TextHeightPercent = 9,
+        EnabledBadges = new List<string>()
     };
 
     // VOST settings (attached to Language panel)
@@ -149,6 +168,16 @@ public class PluginConfiguration : BasePluginConfiguration
         ExcludedLibraryIds = new List<string>();
 
         CustomBadgeTexts = new List<BadgeTextOverride>();
+        // Lists with default content would be appended to (duplicated) by the XML deserializer, so
+        // the defaults are applied once by the plugin at startup (see StatusRulesInitialized).
+        StatusRules = new List<StatusRule>();
+        TagDateCulture = "de-DE";
+        ColorRatings = false;
+        RatingHighThreshold = 8.0;
+        RatingMidThreshold = 6.0;
+        RatingHighColor = "#7ED957";
+        RatingMidColor = "#FFD966";
+        RatingLowColor = "#FF7B72";
         CacheDurationHours = 24;
         JpegQuality = 90;
         OutputFormat = OutputImageFormat.Jpeg;
@@ -173,6 +202,48 @@ public class PluginConfiguration : BasePluginConfiguration
     public List<string> ExcludedLibraryIds { get; set; }
 
     public List<BadgeTextOverride> CustomBadgeTexts { get; set; }
+
+    /// <summary>
+    /// Rules that turn item tags into the status banner (highest weight wins).
+    /// </summary>
+    public List<StatusRule> StatusRules { get; set; }
+
+    /// <summary>
+    /// Culture used to format dates in status texts (e.g. "de-DE"; empty = invariant).
+    /// </summary>
+    public string TagDateCulture { get; set; }
+
+    /// <summary>
+    /// Set once the default status rules were written, so rules deleted by the user stay deleted.
+    /// </summary>
+    public bool StatusRulesInitialized { get; set; }
+
+    /// <summary>
+    /// Color the community rating text by score (green / yellow / red).
+    /// </summary>
+    public bool ColorRatings { get; set; }
+    public double RatingHighThreshold { get; set; }
+    public double RatingMidThreshold { get; set; }
+    public string RatingHighColor { get; set; }
+    public string RatingMidColor { get; set; }
+    public string RatingLowColor { get; set; }
+
+    public static List<StatusRule> CreateDefaultStatusRules() => new()
+    {
+        new() { Tag = "Expected", Text = "EXPECTED {DATE:d MMM}", TextColor = "#FFFFFF", BgColor = "#B3261E", Weight = 300 },
+        new() { Tag = "Premieres", Text = "PREMIERES {DATE:d MMM}", TextColor = "#FFFFFF", BgColor = "#B3261E", Weight = 100 },
+        new() { Tag = "Coming Soon", Text = "COMING SOON", TextColor = "#FFFFFF", BgColor = "#B3261E", Weight = 90 },
+        new() { Tag = "NewShow", Text = "NEU", TextColor = "#FFB366", Weight = 50 },
+        new() { Tag = "UpcomingFinale", Text = "Endet {date:ddd dd/MM}", TextColor = "#C9A0FF", Weight = 40 },
+        new() { Tag = "NewSeasonStarted", Text = "Staffel {1} läuft", TextColor = "#7ED957", Weight = 35 },
+        new() { Tag = "SeasonFinale", Text = "Staffel {1} Finale", TextColor = "#FFC857", Weight = 30 },
+        new() { Tag = "FinalEpisode", Text = "Finale Folge", TextColor = "#FFEB99", Weight = 30 },
+        new() { Tag = "NewSeasonSoon", Text = "Staffel {1} kommt {DATE:ddd dd/MM}", TextColor = "#A8E6A1", Weight = 25 },
+        new() { Tag = "UpcomingEpisode", Text = "Nächste Folge {DATE:ddd dd/MM}", TextColor = "#7DCFFF", Weight = 20 },
+        new() { Tag = "ReturningShows", Text = "Laufend", TextColor = "#FFD966", Weight = 10 },
+        new() { Tag = "EndedShows", Text = "Abgeschlossen", TextColor = "#7ED957", Weight = 10 },
+        new() { Tag = "CanceledShows", Text = "Abgesetzt", TextColor = "#FF7B72", Weight = 10 },
+    };
     public int CacheDurationHours { get; set; }
     public int JpegQuality { get; set; }
     public OutputImageFormat OutputFormat { get; set; }
@@ -407,7 +478,8 @@ public class PluginConfiguration : BasePluginConfiguration
         };
 
         config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(15, 2f);
-        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(30, 2f);
+        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(100, 0f);
+        config.StatusPanel = ImageTypeConfig.CreateDefaultStatusPanel(100, 0f);
 
         config.ShowVostIndicator = true;
         config.VostBgColor = "#000000";
@@ -456,7 +528,8 @@ public class PluginConfiguration : BasePluginConfiguration
         };
 
         config.RatingPanel = ImageTypeConfig.CreateDefaultRatingPanel(10, 2.5f);
-        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(20, 2.5f);
+        config.EditionPanel = ImageTypeConfig.CreateDefaultEditionPanel(100, 0f);
+        config.StatusPanel = ImageTypeConfig.CreateDefaultStatusPanel(100, 0f);
 
         config.ShowVostIndicator = true;
         config.VostBgOpacity = 255;
@@ -464,6 +537,21 @@ public class PluginConfiguration : BasePluginConfiguration
 
         return config;
     }
+}
+
+/// <summary>
+/// Turns an item tag into a status banner. The tag is matched by its name (the part before the
+/// first ':', case-insensitive); the remaining ':'-separated parts are available in the text as
+/// {1}, {2}, ... and a date part as {date} / {date:format} ({DATE:format} is upper-cased).
+/// </summary>
+public class StatusRule
+{
+    public string Tag { get; set; } = string.Empty;
+    public string Text { get; set; } = string.Empty;
+    public string TextColor { get; set; } = "#FFFFFF";
+    public string? BgColor { get; set; }
+    public int? BgOpacity { get; set; }
+    public int Weight { get; set; }
 }
 
 /// <summary>

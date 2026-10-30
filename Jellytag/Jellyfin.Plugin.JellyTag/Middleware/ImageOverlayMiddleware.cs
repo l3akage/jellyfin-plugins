@@ -110,7 +110,7 @@ public partial class ImageOverlayMiddleware
             return;
         }
 
-        var badgeKey = string.Join("_", visibleBadges.Select(b => b.DisplayText == null ? b.BadgeKey : $"{b.BadgeKey}{b.DisplayText}"));
+        var badgeKey = string.Join("_", visibleBadges.Select(b => b.DisplayText == null ? b.BadgeKey : $"{b.BadgeKey}{b.DisplayText}{b.TextColor}"));
         _logger.LogInformation("Applying {Count} badges to {Item}: {BadgeKey}", visibleBadges.Count, item.Name, badgeKey);
 
         var query = context.Request.QueryString.Value ?? string.Empty;
@@ -217,6 +217,7 @@ public partial class ImageOverlayMiddleware
             LanguagePanel = ClonePanelWithReduction(source.LanguagePanel, reduction),
             RatingPanel = ClonePanelWithReduction(source.RatingPanel, reduction),
             EditionPanel = ClonePanelWithReduction(source.EditionPanel, reduction),
+            StatusPanel = ClonePanelWithReduction(source.StatusPanel, reduction),
             ShowVostIndicator = source.ShowVostIndicator,
             VostBgColor = source.VostBgColor,
             VostTextColor = source.VostTextColor,
@@ -235,7 +236,7 @@ public partial class ImageOverlayMiddleware
             ShowMode = panel.ShowMode,
             Layout = panel.Layout,
             GapPercent = panel.GapPercent,
-            SizePercent = Math.Max(1, panel.SizePercent - reduction),
+            SizePercent = Math.Max(1, panel.SizePercent >= 90 ? panel.SizePercent : panel.SizePercent - reduction),
             MarginPercent = panel.MarginPercent,
             Style = panel.Style,
             Order = panel.Order,
@@ -243,6 +244,7 @@ public partial class ImageOverlayMiddleware
             TextBgOpacity = panel.TextBgOpacity,
             TextColor = panel.TextColor,
             TextCornerRadius = panel.TextCornerRadius,
+            TextHeightPercent = panel.TextHeightPercent,
             BadgeTypeOverrides = new List<BadgeTypeStyleOverride>(panel.BadgeTypeOverrides),
             EnabledBadges = new List<string>(panel.EnabledBadges)
         };

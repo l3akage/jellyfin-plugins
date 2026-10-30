@@ -30,6 +30,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
         // Run legacy migration once at startup
         Configuration.MigrateFromLegacy();
+
+        if (!Configuration.StatusRulesInitialized)
+        {
+            Configuration.StatusRules = PluginConfiguration.CreateDefaultStatusRules();
+            Configuration.StatusRulesInitialized = true;
+            SaveConfiguration();
+        }
     }
 
     /// <inheritdoc />

@@ -20,7 +20,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
     private bool _disposed;
 
     private const int MinBadgeSizePercent = 5;
-    private const int MaxBadgeSizePercent = 50;
+    private const int MaxBadgeSizePercent = 100;
     private const float MinBadgeMarginPercent = 0f;
     private const float MaxBadgeMarginPercent = 20f;
 
@@ -79,6 +79,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
             BadgeCategory.Language or BadgeCategory.Subtitle => imageConfig.LanguagePanel,
             BadgeCategory.Rating => imageConfig.RatingPanel,
             BadgeCategory.Edition => imageConfig.EditionPanel,
+            BadgeCategory.Status => imageConfig.StatusPanel,
             _ => imageConfig.ResolutionPanel
         };
     }
@@ -99,6 +100,11 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
         }
 
         // For language/subtitle badges, EnabledBadges is empty = show all (language codes are dynamic)
+        if (badge.Category == BadgeCategory.Status)
+        {
+            return true;
+        }
+
         if (badge.Category is BadgeCategory.Language or BadgeCategory.Subtitle)
         {
             // Subtitle badges depend on ShowVostIndicator
@@ -169,7 +175,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
                 var filtered = new List<BadgeInfo>();
                 var ownedBitmaps = new List<SKBitmap>();
 
-                await PrepareBadgeGroup(panelBadges, sizePercent, image.Width, useText, sizes, sourceBitmaps, filtered, ownedBitmaps).ConfigureAwait(false);
+                await PrepareBadgeGroup(panelBadges, sizePercent, panel.TextHeightPercent, image.Width, useText, sizes, sourceBitmaps, filtered, ownedBitmaps).ConfigureAwait(false);
                 allOwnedBitmaps.AddRange(ownedBitmaps);
 
                 if (filtered.Count == 0) continue;
@@ -279,7 +285,8 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
             (imageConfig.AudioPanel, "Audio"),
             (imageConfig.LanguagePanel, "Language"),
             (imageConfig.RatingPanel, "Rating"),
-            (imageConfig.EditionPanel, "Edition")
+            (imageConfig.EditionPanel, "Edition"),
+            (imageConfig.StatusPanel, "Status")
         };
         panels.Sort((a, b) => a.Panel.Order.CompareTo(b.Panel.Order));
         return panels;
@@ -315,7 +322,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
     }
 
     private async Task PrepareBadgeGroup(
-        List<BadgeInfo> badges, int sizePercent, int imageWidth, bool useTextStyle,
+        List<BadgeInfo> badges, int sizePercent, int heightPercent, int imageWidth, bool useTextStyle,
         List<SKSizeI> sizes, List<SKBitmap> sourceBitmaps, List<BadgeInfo> filtered, List<SKBitmap> ownedBitmaps)
     {
         if (useTextStyle)
@@ -327,7 +334,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
                 var text = GetBadgeDisplayText(badgeInfo);
                 if (string.IsNullOrEmpty(text)) continue;
 
-                var badgeHeight = TextBadgeHeight(badgeInfo, badgeWidth);
+                var badgeHeight = TextBadgeHeight(badgeInfo, badgeWidth, heightPercent);
                 filtered.Add(badgeInfo);
                 sizes.Add(new SKSizeI(badgeWidth, badgeHeight));
             }
@@ -346,7 +353,7 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
                     var text = GetBadgeDisplayText(badgeInfo);
                     if (string.IsNullOrEmpty(text)) continue;
 
-                    var badgeHeight = TextBadgeHeight(badgeInfo, badgeWidth);
+                    var badgeHeight = TextBadgeHeight(badgeInfo, badgeWidth, heightPercent);
                     filtered.Add(badgeInfo);
                     sizes.Add(new SKSizeI(badgeWidth, badgeHeight));
                     continue;
@@ -369,8 +376,8 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
                     var fallbackText = GetBadgeDisplayText(badgeInfo);
                     if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        var fbHeight = TextBadgeHeight(badgeInfo, badgeWidth);
-                        var textBadge = new BadgeInfo { Category = badgeInfo.Category, BadgeKey = badgeInfo.BadgeKey, ResourceFileName = string.Empty, DisplayText = badgeInfo.DisplayText };
+                        var fbHeight = TextBadgeHeight(badgeInfo, badgeWidth, heightPercent);
+                        var textBadge = new BadgeInfo { Category = badgeInfo.Category, BadgeKey = badgeInfo.BadgeKey, ResourceFileName = string.Empty, DisplayText = badgeInfo.DisplayText, TextColor = badgeInfo.TextColor, BgColor = badgeInfo.BgColor, BgOpacity = badgeInfo.BgOpacity };
                         filtered.Add(textBadge);
                         sizes.Add(new SKSizeI(badgeWidth, fbHeight));
                     }
@@ -391,8 +398,8 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
                     var fallbackText = GetBadgeDisplayText(badgeInfo);
                     if (!string.IsNullOrEmpty(fallbackText))
                     {
-                        var fbHeight = TextBadgeHeight(badgeInfo, badgeWidth);
-                        var textBadge = new BadgeInfo { Category = badgeInfo.Category, BadgeKey = badgeInfo.BadgeKey, ResourceFileName = string.Empty, DisplayText = badgeInfo.DisplayText };
+                        var fbHeight = TextBadgeHeight(badgeInfo, badgeWidth, heightPercent);
+                        var textBadge = new BadgeInfo { Category = badgeInfo.Category, BadgeKey = badgeInfo.BadgeKey, ResourceFileName = string.Empty, DisplayText = badgeInfo.DisplayText, TextColor = badgeInfo.TextColor, BgColor = badgeInfo.BgColor, BgOpacity = badgeInfo.BgOpacity };
                         filtered.Add(textBadge);
                         sizes.Add(new SKSizeI(badgeWidth, fbHeight));
                     }
@@ -761,8 +768,15 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
     }
 
     // Edition labels are wide and short, so they get a flatter box than the 2:1 default.
-    private static int TextBadgeHeight(BadgeInfo badge, int badgeWidth) =>
-        Math.Max(1, (int)(badgeWidth * (badge.Category == BadgeCategory.Edition ? 0.25 : 0.5)));
+    private static int TextBadgeHeight(BadgeInfo badge, int badgeWidth, int heightPercent)
+    {
+        if (heightPercent > 0)
+        {
+            return Math.Max(1, (int)(badgeWidth * (Math.Min(heightPercent, 200) / 100.0)));
+        }
+
+        return Math.Max(1, (int)(badgeWidth * (badge.Category == BadgeCategory.Edition ? 0.25 : 0.5)));
+    }
 
     private static string GetBadgeDisplayText(BadgeInfo badge)
     {
@@ -811,6 +825,11 @@ public class ImageOverlayService : IImageOverlayService, IDisposable
         var textColor = panel.TextColor ?? "#FFFFFF";
         var opacity = (byte)Math.Clamp(panel.TextBgOpacity, 0, 255);
         var cornerRadius = Math.Clamp(panel.TextCornerRadius, 0, 50);
+
+        // Per-badge colors (status rules, score-colored ratings)
+        if (!string.IsNullOrEmpty(badge.BgColor)) bgColor = badge.BgColor;
+        if (!string.IsNullOrEmpty(badge.TextColor)) textColor = badge.TextColor;
+        if (badge.BgOpacity.HasValue) opacity = (byte)Math.Clamp(badge.BgOpacity.Value, 0, 255);
 
         // VOST override for subtitle badges
         if (badge.Category == BadgeCategory.Subtitle)

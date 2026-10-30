@@ -48,7 +48,12 @@ public enum BadgeCategory
     /// <summary>
     /// Edition badge parsed from the file name (Plex naming, e.g. {edition-IMAX}).
     /// </summary>
-    Edition
+    Edition,
+
+    /// <summary>
+    /// Status banner derived from item tags (e.g. NewSeasonSoon:2:2026-11-03, Expected:2026-11-03).
+    /// </summary>
+    Status
 }
 
 /// <summary>
@@ -75,4 +80,19 @@ public class BadgeInfo
     /// Gets or sets literal text to render for dynamic badges (e.g. "7.8"). Takes precedence over key-based text.
     /// </summary>
     public string? DisplayText { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional text color (hex) overriding the panel's text color for this badge.
+    /// </summary>
+    public string? TextColor { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional background color (hex) overriding the panel's color for this badge.
+    /// </summary>
+    public string? BgColor { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional background opacity (0-255) overriding the panel's opacity.
+    /// </summary>
+    public int? BgOpacity { get; set; }
 }

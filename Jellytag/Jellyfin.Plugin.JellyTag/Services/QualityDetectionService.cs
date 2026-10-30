@@ -175,6 +175,7 @@ public partial class QualityDetectionService: IQualityDetectionService
 
         AddRatingBadges(item, badges);
         AddEditionBadge(item, badges);
+        AddStatusBadge(item, badges);
 
         return badges;
     }
@@ -202,6 +203,68 @@ public partial class QualityDetectionService: IQualityDetectionService
         badges.Add(new BadgeInfo { Category = BadgeCategory.Edition, BadgeKey = "edition", DisplayText = edition });
     }
 
+    private static string? RatingColor(double rating)
+    {
+        var config = Plugin.Instance?.Configuration;
+        if (config == null || !config.ColorRatings)
+        {
+            return null;
+        }
+
+        if (rating >= config.RatingHighThreshold) return config.RatingHighColor;
+        if (rating >= config.RatingMidThreshold) return config.RatingMidColor;
+        return config.RatingLowColor;
+    }
+
+    /// <summary>
+    /// Picks the highest-weight status rule matching one of the item's tags and renders its text.
+    /// </summary>
+    private static void AddStatusBadge(BaseItem item, List<BadgeInfo> badges)
+    {
+        var config = Plugin.Instance?.Configuration;
+        if (config?.StatusRules == null || config.StatusRules.Count == 0 || item.Tags == null || item.Tags.Length == 0)
+        {
+            return;
+        }
+
+        Configuration.StatusRule? best = null;
+        string[] bestParts = Array.Empty<string>();
+        foreach (var tag in item.Tags)
+        {
+            var parts = tag.Split(':');
+            var rule = config.StatusRules
+                .Where(r => string.Equals(r.Tag, parts[0].Trim(), StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(r => r.Weight)
+                .FirstOrDefault();
+            if (rule != null && (best == null || rule.Weight > best.Weight))
+            {
+                best = rule;
+                bestParts = parts;
+            }
+        }
+
+        if (best == null)
+        {
+            return;
+        }
+
+        var text = StatusText.Render(best.Text, bestParts, config.TagDateCulture);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return;
+        }
+
+        badges.Add(new BadgeInfo
+        {
+            Category = BadgeCategory.Status,
+            BadgeKey = "status-" + best.Tag.ToLowerInvariant(),
+            DisplayText = text,
+            TextColor = best.TextColor,
+            BgColor = best.BgColor,
+            BgOpacity = best.BgOpacity
+        });
+    }
+
     private static void AddRatingBadges(BaseItem item, List<BadgeInfo> badges)
     {
         if (item.CommunityRating is > 0)
@@ -210,7 +273,8 @@ public partial class QualityDetectionService: IQualityDetectionService
             {
                 Category = BadgeCategory.Rating,
                 BadgeKey = "community",
-                DisplayText = item.CommunityRating.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)
+                DisplayText = item.CommunityRating.Value.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture),
+                TextColor = RatingColor(item.CommunityRating.Value)
             });
         }
 

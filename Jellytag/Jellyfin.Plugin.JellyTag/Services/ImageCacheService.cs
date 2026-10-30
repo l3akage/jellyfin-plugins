@@ -212,6 +212,16 @@ public class ImageCacheService : IImageCacheService
         sb.Append(config.ThumbnailSameAsPoster).Append('|');
         AppendImageTypeFingerprint(sb, config.PosterConfig);
         AppendImageTypeFingerprint(sb, config.ThumbnailConfig);
+        sb.Append(config.TagDateCulture).Append(config.ColorRatings).Append(config.RatingHighThreshold).Append(config.RatingMidThreshold);
+        sb.Append(config.RatingHighColor).Append(config.RatingMidColor).Append(config.RatingLowColor).Append('|');
+        if (config.StatusRules != null)
+        {
+            foreach (var r in config.StatusRules)
+            {
+                sb.Append(r.Tag).Append(r.Text).Append(r.TextColor).Append(r.BgColor ?? "n").Append(r.BgOpacity).Append(r.Weight).Append(';');
+            }
+        }
+
         if (config.CustomBadgeTexts != null)
         {
             foreach (var cbt in config.CustomBadgeTexts)
@@ -234,6 +244,7 @@ public class ImageCacheService : IImageCacheService
         AppendPanelFingerprint(sb, c.LanguagePanel);
         AppendPanelFingerprint(sb, c.RatingPanel);
         AppendPanelFingerprint(sb, c.EditionPanel);
+        AppendPanelFingerprint(sb, c.StatusPanel);
         sb.Append(c.ShowVostIndicator).Append(c.VostBgColor ?? "n").Append(c.VostTextColor ?? "n");
         sb.Append(c.VostBgOpacity).Append(c.VostCornerRadius).Append('|');
     }
@@ -243,7 +254,7 @@ public class ImageCacheService : IImageCacheService
         sb.Append(p.Enabled).Append((int)p.Position).Append((int)p.ShowMode);
         sb.Append((int)p.Layout).Append(p.GapPercent).Append(p.SizePercent).Append(p.MarginPercent);
         sb.Append((int)p.Style).Append(p.Order);
-        sb.Append(p.TextBgColor).Append(p.TextBgOpacity).Append(p.TextColor).Append(p.TextCornerRadius);
+        sb.Append(p.TextBgColor).Append(p.TextBgOpacity).Append(p.TextColor).Append(p.TextCornerRadius).Append(p.TextHeightPercent);
         sb.Append(string.Join(",", p.EnabledBadges));
         if (p.BadgeTypeOverrides != null)
         {
